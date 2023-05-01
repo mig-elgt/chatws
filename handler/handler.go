@@ -29,12 +29,17 @@ var upgrader = websocket.Upgrader{
 }
 
 func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: Validate client connection
+	// TODO: Validate client topics
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	conn.WriteMessage(1, []byte("hi client!"))
+	// TODO: Run Subscriber
+	// TODO: Run Reader
+	// TODO: Error Handler for Subs and Reader to close stop channel
 	for {
 		msgType, p, err := conn.ReadMessage()
 		if err != nil {
