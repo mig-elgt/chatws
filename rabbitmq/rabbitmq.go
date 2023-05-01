@@ -1,6 +1,7 @@
 package rabbbitmq
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 
@@ -12,8 +13,70 @@ type rabbbitmq struct {
 	conn *amqp.Connection
 }
 
-func (r *rabbbitmq) Subscribe(topics map[string][]string, clientID string, stop chan struct{}, callback func(msg io.Reader) error) {
-	panic("not implemented") // TODO: Implement
+func (r *rabbbitmq) Subscribe(topics map[string][]string, clientID string, stop chan struct{}, callback func(msg io.Reader) error) error {
+	// Open new channel
+	ch, err := r.conn.Channel()
+	if err != nil {
+		return errors.Wrap(err, "could not create a channel connection")
+	}
+	defer ch.Close()
+
+	go func() {
+		<-stop
+		ch.Close()
+	}()
+	queueName := clientID
+	// Queue Dleclaration
+	if _, err := ch.QueueDeclare(
+		queueName, // QueueName
+		true,
+		false,
+		false,
+		false,
+		nil,
+	); err != nil {
+		return errors.Wrapf(err, "could not declare a queue: %v", clientID)
+	}
+	// Exchange and Queue Bind Declarations
+	for exchange, routeKeys := range topics {
+		if err := ch.ExchangeDeclare(
+			exchange,
+			"topic",
+			true,
+			false,
+			false,
+			false,
+			nil,
+		); err != nil {
+			return errors.Wrapf(err, "could not declare exchange: %v", exchange)
+		}
+		for _, key := range routeKeys {
+			if err := ch.QueueBind(queueName, key, exchange, false, nil); err != nil {
+				return errors.Wrapf(err, "could not bind queue: %v; route key: %v; exchange: %v", queueName, key, exchange)
+			}
+		}
+	}
+
+	msgs, err := ch.Consume(
+		queueName,
+		"",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return errors.Wrapf(err, "could not get consume channel: %v", queueName)
+	}
+	for d := range msgs {
+		if err := callback(bytes.NewBuffer(d.Body)); err != nil {
+			d.Nack(false, true)
+			return err
+		}
+		d.Ack(false)
+	}
+	return nil
 }
 
 func (r *rabbbitmq) Publish(topic, subTopic string, msg io.Reader) error {
