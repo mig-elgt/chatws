@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -36,20 +34,9 @@ func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	conn.WriteMessage(1, []byte("hi client!"))
+	defer conn.Close()
 	// TODO: Run Subscriber
 	// TODO: Run Reader
 	// TODO: Error Handler for Subs and Reader to close stop channel
-	for {
-		msgType, p, err := conn.ReadMessage()
-		if err != nil {
-			// Handle close error
-			fmt.Printf("%T, %v", err, err)
-			return
-		}
-		fmt.Printf("got message: %v\n", string(p))
-		if err := conn.WriteMessage(msgType, p); err != nil {
-			log.Println(err)
-		}
-	}
+	h.reader(conn)
 }
