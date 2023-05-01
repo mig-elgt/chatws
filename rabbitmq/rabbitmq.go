@@ -2,6 +2,7 @@ package rabbbitmq
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -11,6 +12,15 @@ import (
 
 type rabbbitmq struct {
 	conn *amqp.Connection
+}
+
+// New creates new Message Broker connection
+func New(user, password, host, port string) (*rabbbitmq, error) {
+	conn, err := amqp.Dial(fmt.Sprintf("amqp://%v:%v@%v:%v/", user, password, host, port))
+	if err != nil {
+		return nil, err
+	}
+	return &rabbbitmq{conn}, nil
 }
 
 func (r *rabbbitmq) Subscribe(topics map[string][]string, clientID string, stop chan struct{}, callback func(msg io.Reader) error) error {
