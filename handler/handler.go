@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
@@ -59,8 +60,24 @@ func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer conn.Close()
-	h.reader(conn)
+
+	done := make(chan error, 1)
+	stop := make(chan struct{})
+
+	go func() {
+		done <- h.reader(conn, stop)
+	}()
+
+	var stopped bool
+	for i := 0; i < 1; i++ {
+		if err := <-done; err != nil {
+			fmt.Printf("error: %v\n", err)
+		}
+		if !stopped {
+			stopped = true
+			close(stop)
+		}
+	}
 }
 
 // logs:foo,bar|sensors:a,b
