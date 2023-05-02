@@ -35,7 +35,6 @@ func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing jwt code", http.StatusBadRequest)
 		return
 	}
-	clientID := r.URL.Query().Get("clientID")
 	topics, err := h.convertTopics(r.URL.Query().Get("topics"))
 	if err != nil {
 		logrus.Errorf("could not convert topics: %v", err)
@@ -61,13 +60,13 @@ func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logrus.Info("client connected: ", clientID)
+	logrus.Info("client connected: ", payload.ClientID)
 
 	done := make(chan error, 2)
 	stop := make(chan struct{})
 
 	go func() {
-		done <- h.subscriber(conn, clientID, topics, stop)
+		done <- h.subscriber(conn, payload.ClientID, topics, stop)
 	}()
 
 	go func() {
