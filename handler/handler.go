@@ -54,6 +54,13 @@ func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized to subscribe topics", http.StatusUnauthorized)
 		return
 	}
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer conn.Close()
+	h.reader(conn)
 }
 
 // logs:foo,bar|sensors:a,b

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -16,10 +17,12 @@ func TestWebSocketHandler(t *testing.T) {
 	type args struct {
 		authenticateFnMock func(jwt string) (*chatws.TokenPayload, error)
 		clientQuery        string
+		clientMessage      string
 	}
 	testCases := map[string]struct {
 		args           args
 		wantStatusCode int
+		wantErrMessage []byte
 	}{
 		"missing jwt param": {
 			args: args{
@@ -61,6 +64,20 @@ func TestWebSocketHandler(t *testing.T) {
 			},
 			wantStatusCode: http.StatusUnauthorized,
 		},
+		"send bad message format": {
+			args: args{
+				authenticateFnMock: func(jwt string) (*chatws.TokenPayload, error) {
+					return &chatws.TokenPayload{
+						Topics: map[string][]string{
+							"logs": {"panic"},
+						},
+					}, nil
+				},
+				clientQuery:   "jwt=header.payload.signature&topics=logs:panic",
+				clientMessage: "foobar",
+			},
+			wantErrMessage: []byte("Invalid chat message format"),
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
@@ -78,6 +95,16 @@ func TestWebSocketHandler(t *testing.T) {
 				}
 			}
 			if err == nil {
+				if err := ws.WriteMessage(websocket.TextMessage, []byte(tc.args.clientMessage)); err != nil {
+					t.Fatalf("%v", err)
+				}
+				_, p, err := ws.ReadMessage()
+				if err != nil {
+					t.Fatalf("%v", err)
+				}
+				if got, want := p, tc.wantErrMessage; !reflect.DeepEqual(got, want) {
+					t.Fatalf("got %v; want %v", string(got), string(want))
+				}
 				ws.Close()
 				svr.Close()
 			}
