@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -31,45 +30,44 @@ var upgrader = websocket.Upgrader{
 
 // ws://localhost:8080/ws?jwt=header.payload.signature&topics=logs:foo,bar;
 func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
-	// jwt := r.URL.Query().Get("jwt")
-	// if jwt == "" {
-	// 	http.Error(w, "missing jwt code", http.StatusBadRequest)
-	// 	return
-	// }
-	clientID := r.URL.Query().Get("clientID")
-	topics := r.URL.Query().Get("topics")
-	if topics == "" {
-		logrus.Error("could not get topics parameter")
-		http.Error(w, "missing topics", http.StatusBadRequest)
+	jwt := r.URL.Query().Get("jwt")
+	if jwt == "" {
+		http.Error(w, "missing jwt code", http.StatusBadRequest)
 		return
 	}
-	topicsToSub, err := h.convertTopics(topics)
+	clientID := r.URL.Query().Get("clientID")
+	topics, err := h.convertTopics(r.URL.Query().Get("topics"))
 	if err != nil {
+		logrus.Errorf("could not convert topics: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// payload, err := h.auth.Authenticate(jwt)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-	// if !reflect.DeepEqual(topicsToSub, payload.Topics) {
-	// 	http.Error(w, "unauthorized to subscribe topics", http.StatusUnauthorized)
-	// 	return
-	// }
+	payload, err := h.auth.Authenticate(jwt)
+	if err != nil {
+		logrus.Errorf("could not authenticate client: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !h.matchTopics(payload.Topics, topics) {
+		logrus.Errorf("could not match client topics: %v", topics)
+		http.Error(w, "unauthorized to subscribe topics", http.StatusUnauthorized)
+		return
+	}
+	topics["chat"] = []string{payload.ClientID}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
+		logrus.Errorf("could not upgrade HTTP connection to WebSocket: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	logrus.Info("client connected!", clientID)
+	logrus.Info("client connected: ", clientID)
 
 	done := make(chan error, 2)
 	stop := make(chan struct{})
 
 	go func() {
-		done <- h.subscriber(conn, clientID, topicsToSub, stop)
+		done <- h.subscriber(conn, clientID, topics, stop)
 	}()
 
 	go func() {
@@ -79,7 +77,7 @@ func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 	var stopped bool
 	for i := 0; i < 1; i++ {
 		if err := <-done; err != nil {
-			fmt.Printf("error: %v\n", err)
+			logrus.Errorf("error: %v", err)
 		}
 		if !stopped {
 			stopped = true
@@ -91,10 +89,10 @@ func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 // logs:foo,bar|sensors:a,b
 func (h handler) convertTopics(topicsStr string) (map[string][]string, error) {
 	topics := map[string][]string{}
-	kinds := strings.Split(topicsStr, "|")
-	if len(kinds) == 0 {
-		return nil, chatws.ErrClientTopicsBadFormat
+	if topicsStr == "" {
+		return topics, nil
 	}
+	kinds := strings.Split(topicsStr, "|")
 	for _, kind := range kinds {
 		t := strings.Split(kind, ":")
 		if len(t) != 2 {
@@ -108,4 +106,26 @@ func (h handler) convertTopics(topicsStr string) (map[string][]string, error) {
 		topics[topic] = subTopics
 	}
 	return topics, nil
+}
+
+func (h handler) matchTopics(source, subscribe map[string][]string) bool {
+	for sub, topics := range subscribe {
+		if _, ok := source[sub]; !ok {
+			return false
+		}
+		for _, topic := range topics {
+			var found bool
+			for _, st := range source[sub] {
+				if topic == st {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return false
+			}
+
+		}
+	}
+	return true
 }

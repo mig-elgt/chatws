@@ -34,12 +34,6 @@ func TestWebSocketHandler(t *testing.T) {
 			},
 			wantStatusCode: http.StatusBadRequest,
 		},
-		"missing topics": {
-			args: args{
-				clientQuery: "jwt=header.payload.signature",
-			},
-			wantStatusCode: http.StatusBadRequest,
-		},
 		"topics bad format": {
 			args: args{
 				clientQuery: "jwt=header.payload.signature&topics=logs",
