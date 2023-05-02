@@ -26,14 +26,18 @@ func TestWebSocketHandler(t *testing.T) {
 			},
 			wantStatusCode: http.StatusBadRequest,
 		},
+		"missing topics": {
+			args: args{
+				clientQuery: "jwt=header.payload.signature",
+			},
+			wantStatusCode: http.StatusBadRequest,
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			h := handler{}
 			svr := httptest.NewServer(http.HandlerFunc(h.wsHandler))
-			// Convert http://127.0.0.1 to ws://127.0.0.1
 			u := "ws" + strings.TrimPrefix(svr.URL, "http")
-			// Connect to the server
 			ws, resp, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%v?%v", u, tc.args.clientQuery), nil)
 			if err != nil {
 				if got, want := resp.StatusCode, tc.wantStatusCode; got != want {

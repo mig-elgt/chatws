@@ -33,4 +33,9 @@ func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing jwt code", http.StatusBadRequest)
 		return
 	}
+	topics := r.URL.Query().Get("topics")
+	if topics == "" {
+		http.Error(w, "missing topics", http.StatusBadRequest)
+		return
+	}
 }
