@@ -3,12 +3,12 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"reflect"
 	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/mig-elgt/chatws"
+	"github.com/sirupsen/logrus"
 )
 
 type handler struct {
@@ -31,13 +31,15 @@ var upgrader = websocket.Upgrader{
 
 // ws://localhost:8080/ws?jwt=header.payload.signature&topics=logs:foo,bar;
 func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
-	jwt := r.URL.Query().Get("jwt")
-	if jwt == "" {
-		http.Error(w, "missing jwt code", http.StatusBadRequest)
-		return
-	}
+	// jwt := r.URL.Query().Get("jwt")
+	// if jwt == "" {
+	// 	http.Error(w, "missing jwt code", http.StatusBadRequest)
+	// 	return
+	// }
+	clientID := r.URL.Query().Get("clientID")
 	topics := r.URL.Query().Get("topics")
 	if topics == "" {
+		logrus.Error("could not get topics parameter")
 		http.Error(w, "missing topics", http.StatusBadRequest)
 		return
 	}
@@ -46,26 +48,28 @@ func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	payload, err := h.auth.Authenticate(jwt)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if !reflect.DeepEqual(topicsToSub, payload.Topics) {
-		http.Error(w, "unauthorized to subscribe topics", http.StatusUnauthorized)
-		return
-	}
+	// payload, err := h.auth.Authenticate(jwt)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	// if !reflect.DeepEqual(topicsToSub, payload.Topics) {
+	// 	http.Error(w, "unauthorized to subscribe topics", http.StatusUnauthorized)
+	// 	return
+	// }
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	logrus.Info("client connected!", clientID)
+
 	done := make(chan error, 2)
 	stop := make(chan struct{})
 
 	go func() {
-		done <- h.subscriber(conn, payload.ClientID, topicsToSub, stop)
+		done <- h.subscriber(conn, clientID, topicsToSub, stop)
 	}()
 
 	go func() {
