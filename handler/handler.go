@@ -26,17 +26,11 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
+// ws://localhost:8080/ws?jwt=header.payload.signature&topics=logs:foo,bar;
 func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: Validate client connection
-	// TODO: Validate client topics
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	jwt := r.URL.Query().Get("jwt")
+	if jwt == "" {
+		http.Error(w, "missing jwt code", http.StatusBadRequest)
 		return
 	}
-	defer conn.Close()
-	// TODO: Run Subscriber
-	// TODO: Run Reader
-	// TODO: Error Handler for Subs and Reader to close stop channel
-	h.reader(conn)
 }
