@@ -17,11 +17,8 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("could not listen to port %v: %v", *grpcAddr, err)
 	}
-	logrus.Infof("GRPC listening on %s", *grpcAddr)
-
-	tv := jwt.New("secret_key")
-	s := grpc.NewAPI(tv)
-
+	logrus.Infof("gRPC server listening on %s", *grpcAddr)
+	s := grpc.NewAPI(jwt.New("secret_key"))
 	if err := s.Serve(lis); err != nil {
 		logrus.Fatalf("grpc Server failed: %v", err)
 	}
