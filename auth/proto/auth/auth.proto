@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+option go_package = "github.com/mig-elgt/chatws/auth/proto/auth";
+
+package auth;
+
+service AuthService {
+  rpc Login (LoginRequest) returns (LoginResponse) {}
+  rpc Authenticate (AuthenticateRequest) returns (AuthenticateResponse) {}
+}
+
+message LoginRequest {
+  string Username = 1;
+  string Password = 2;
+}
+
+message LoginResponse {
+  string JWT = 1;
+}
+
+message AuthenticateRequest {
+  string JWT = 1;
+}
+
+message Topics {
+  repeated string Name = 1;
+}
+
+message AuthenticateResponse {
+  string ClientID = 1;
+  repeated Topics Topics = 2;
+}
