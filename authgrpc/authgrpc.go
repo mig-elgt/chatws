@@ -12,11 +12,18 @@ type authgrpc struct {
 }
 
 func (a *authgrpc) Authenticate(jwt string) (*chatws.TokenPayload, error) {
-	_, err := a.client.Authenticate(context.Background(), &pb.AuthenticateRequest{
+	resp, err := a.client.Authenticate(context.Background(), &pb.AuthenticateRequest{
 		JWT: jwt,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return nil, nil
+	subscribedTopics := map[string][]string{}
+
+	for _, topics := range resp.Topics {
+		topic, subTopics := topics.Name[0], topics.Name[1:]
+		subscribedTopics[topic] = subTopics
+	}
+
+	return &chatws.TokenPayload{ClientID: resp.ClientID, Topics: subscribedTopics}, nil
 }
