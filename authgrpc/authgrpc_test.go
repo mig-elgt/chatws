@@ -32,6 +32,27 @@ func TestAuthgRPC_Authenticate(t *testing.T) {
 			wantErr:   true,
 			expectErr: errors.New("rpc error: code = Internal desc = service not available"),
 		},
+		"base case": {
+			args: args{
+				authenticateFnMock: func(ctx context.Context, in *pb.AuthenticateRequest) (*pb.AuthenticateResponse, error) {
+					return &pb.AuthenticateResponse{
+						ClientID: "foobar",
+						Topics: []*pb.Topics{
+							{Name: []string{"logs", "panic", "error"}},
+							{Name: []string{"sensors", "gps", "battery"}},
+						},
+					}, nil
+				},
+			},
+			wantErr: false,
+			want: &chatws.TokenPayload{
+				ClientID: "foobar",
+				Topics: map[string][]string{
+					"logs":    {"panic", "error"},
+					"sensors": {"gps", "battery"},
+				},
+			},
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
