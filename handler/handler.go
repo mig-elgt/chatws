@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -39,16 +40,20 @@ func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing topics", http.StatusBadRequest)
 		return
 	}
-	_, err := h.convertTopics(topics)
+	topicsToSub, err := h.convertTopics(topics)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// _, err := h.auth.Authenticate(jwt)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
+	payload, err := h.auth.Authenticate(jwt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !reflect.DeepEqual(topicsToSub, payload.Topics) {
+		http.Error(w, "unauthorized to subscribe topics", http.StatusUnauthorized)
+		return
+	}
 }
 
 // logs:foo,bar|sensors:a,b
