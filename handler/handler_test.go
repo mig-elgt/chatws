@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -16,6 +18,7 @@ import (
 func TestWebSocketHandler(t *testing.T) {
 	type args struct {
 		authenticateFnMock func(jwt string) (*chatws.TokenPayload, error)
+		publishFnMock      func(topic, subTopic string, msg io.Reader) error
 		clientQuery        string
 		clientMessage      string
 	}
@@ -60,6 +63,9 @@ func TestWebSocketHandler(t *testing.T) {
 						},
 					}, nil
 				},
+				publishFnMock: func(topic, subTopic string, msg io.Reader) error {
+					return nil
+				},
 				clientQuery: "jwt=header.payload.signature&topics=logs:foo,bar|sensors:gps",
 			},
 			wantStatusCode: http.StatusUnauthorized,
@@ -72,6 +78,9 @@ func TestWebSocketHandler(t *testing.T) {
 							"logs": {"panic"},
 						},
 					}, nil
+				},
+				publishFnMock: func(topic, subTopic string, msg io.Reader) error {
+					return nil
 				},
 				clientQuery:   "jwt=header.payload.signature&topics=logs:panic",
 				clientMessage: "foobar",
@@ -87,10 +96,30 @@ func TestWebSocketHandler(t *testing.T) {
 						},
 					}, nil
 				},
+				publishFnMock: func(topic, subTopic string, msg io.Reader) error {
+					return nil
+				},
 				clientQuery:   "jwt=header.payload.signature&topics=logs:panic",
 				clientMessage: `{"kind":"foo","message":"foobar","recipient":"clientB"}`,
 			},
 			wantErrMessage: []byte("Invalid chat topic"),
+		},
+		"failed to send a message": {
+			args: args{
+				authenticateFnMock: func(jwt string) (*chatws.TokenPayload, error) {
+					return &chatws.TokenPayload{
+						Topics: map[string][]string{
+							"logs": {"panic"},
+						},
+					}, nil
+				},
+				publishFnMock: func(topic, subTopic string, msg io.Reader) error {
+					return errors.New("could not publish message")
+				},
+				clientQuery:   "jwt=header.payload.signature&topics=logs:panic",
+				clientMessage: `{"kind":"chat","message":"foobar","recipient":"clientB"}`,
+			},
+			wantErrMessage: []byte("Could not send message"),
 		},
 	}
 	for name, tc := range testCases {
@@ -98,6 +127,9 @@ func TestWebSocketHandler(t *testing.T) {
 			h := handler{
 				auth: &mocks.AuthServiceMock{
 					AuthenticateFn: tc.args.authenticateFnMock,
+				},
+				broker: &mocks.MessageBrokerMock{
+					PublishFn: tc.args.publishFnMock,
 				},
 			}
 			svr := httptest.NewServer(http.HandlerFunc(h.wsHandler))

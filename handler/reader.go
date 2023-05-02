@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"log"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -27,6 +28,12 @@ func (h handler) reader(conn *websocket.Conn) {
 		}
 		if message.Kind != "chat" {
 			if err := conn.WriteMessage(msgType, []byte("Invalid chat topic")); err != nil {
+				log.Println(err)
+			}
+		}
+		if err := h.broker.Publish(message.Kind, message.Recipient, strings.NewReader(message.Message)); err != nil {
+
+			if err := conn.WriteMessage(msgType, []byte("Could not send message")); err != nil {
 				log.Println(err)
 			}
 		}
