@@ -18,6 +18,7 @@ import (
 func TestWebSocketHandler(t *testing.T) {
 	type args struct {
 		authenticateFnMock func(jwt string) (*chatws.TokenPayload, error)
+		subscribeFnMock    func(topics map[string][]string, clientID string, stop chan struct{}, callback func(msg io.Reader) error) error
 		publishFnMock      func(topic, subTopic string, msg io.Reader) error
 		clientQuery        string
 		clientMessage      string
@@ -63,6 +64,10 @@ func TestWebSocketHandler(t *testing.T) {
 						},
 					}, nil
 				},
+				subscribeFnMock: func(topics map[string][]string, clientID string, stop chan struct{}, callback func(msg io.Reader) error) error {
+					<-stop
+					return nil
+				},
 				publishFnMock: func(topic, subTopic string, msg io.Reader) error {
 					return nil
 				},
@@ -78,6 +83,10 @@ func TestWebSocketHandler(t *testing.T) {
 							"logs": {"panic"},
 						},
 					}, nil
+				},
+				subscribeFnMock: func(topics map[string][]string, clientID string, stop chan struct{}, callback func(msg io.Reader) error) error {
+					<-stop
+					return nil
 				},
 				publishFnMock: func(topic, subTopic string, msg io.Reader) error {
 					return nil
@@ -96,6 +105,10 @@ func TestWebSocketHandler(t *testing.T) {
 						},
 					}, nil
 				},
+				subscribeFnMock: func(topics map[string][]string, clientID string, stop chan struct{}, callback func(msg io.Reader) error) error {
+					<-stop
+					return nil
+				},
 				publishFnMock: func(topic, subTopic string, msg io.Reader) error {
 					return nil
 				},
@@ -113,6 +126,10 @@ func TestWebSocketHandler(t *testing.T) {
 						},
 					}, nil
 				},
+				subscribeFnMock: func(topics map[string][]string, clientID string, stop chan struct{}, callback func(msg io.Reader) error) error {
+					<-stop
+					return nil
+				},
 				publishFnMock: func(topic, subTopic string, msg io.Reader) error {
 					return errors.New("could not publish message")
 				},
@@ -129,7 +146,8 @@ func TestWebSocketHandler(t *testing.T) {
 					AuthenticateFn: tc.args.authenticateFnMock,
 				},
 				broker: &mocks.MessageBrokerMock{
-					PublishFn: tc.args.publishFnMock,
+					SubscribeFn: tc.args.subscribeFnMock,
+					PublishFn:   tc.args.publishFnMock,
 				},
 			}
 			svr := httptest.NewServer(http.HandlerFunc(h.wsHandler))
