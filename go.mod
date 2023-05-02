@@ -10,6 +10,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
+	github.com/mig-elgt/broker v0.0.0-20230427233539-8910eb2d0b2d // indirect
 	github.com/mig-elgt/jwt v0.0.0-20230112013007-a46fc826316c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect

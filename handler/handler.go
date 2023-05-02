@@ -32,6 +32,7 @@ var upgrader = websocket.Upgrader{
 func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 	jwt := r.URL.Query().Get("jwt")
 	if jwt == "" {
+		logrus.Errorf("could not find JWT")
 		http.Error(w, "missing jwt code", http.StatusBadRequest)
 		return
 	}
