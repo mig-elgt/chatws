@@ -78,6 +78,20 @@ func TestWebSocketHandler(t *testing.T) {
 			},
 			wantErrMessage: []byte("Invalid chat message format"),
 		},
+		"invalid chat topic": {
+			args: args{
+				authenticateFnMock: func(jwt string) (*chatws.TokenPayload, error) {
+					return &chatws.TokenPayload{
+						Topics: map[string][]string{
+							"logs": {"panic"},
+						},
+					}, nil
+				},
+				clientQuery:   "jwt=header.payload.signature&topics=logs:panic",
+				clientMessage: `{"kind":"foo","message":"foobar","recipient":"clientB"}`,
+			},
+			wantErrMessage: []byte("Invalid chat topic"),
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {

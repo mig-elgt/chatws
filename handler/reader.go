@@ -25,5 +25,10 @@ func (h handler) reader(conn *websocket.Conn) {
 				log.Println(err)
 			}
 		}
+		if message.Kind != "chat" {
+			if err := conn.WriteMessage(msgType, []byte("Invalid chat topic")); err != nil {
+				log.Println(err)
+			}
+		}
 	}
 }
