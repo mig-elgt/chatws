@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"reflect"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -31,30 +30,30 @@ var upgrader = websocket.Upgrader{
 
 // ws://localhost:8080/ws?jwt=header.payload.signature&topics=logs:foo,bar;
 func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
-	jwt := r.URL.Query().Get("jwt")
-	if jwt == "" {
-		http.Error(w, "missing jwt code", http.StatusBadRequest)
-		return
-	}
-	topics := r.URL.Query().Get("topics")
-	if topics == "" {
-		http.Error(w, "missing topics", http.StatusBadRequest)
-		return
-	}
-	topicsToSub, err := h.convertTopics(topics)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	payload, err := h.auth.Authenticate(jwt)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if !reflect.DeepEqual(topicsToSub, payload.Topics) {
-		http.Error(w, "unauthorized to subscribe topics", http.StatusUnauthorized)
-		return
-	}
+	// jwt := r.URL.Query().Get("jwt")
+	// if jwt == "" {
+	// 	http.Error(w, "missing jwt code", http.StatusBadRequest)
+	// 	return
+	// }
+	// topics := r.URL.Query().Get("topics")
+	// if topics == "" {
+	// 	http.Error(w, "missing topics", http.StatusBadRequest)
+	// 	return
+	// }
+	// topicsToSub, err := h.convertTopics(topics)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
+	// payload, err := h.auth.Authenticate(jwt)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	// if !reflect.DeepEqual(topicsToSub, payload.Topics) {
+	// 	http.Error(w, "unauthorized to subscribe topics", http.StatusUnauthorized)
+	// 	return
+	// }
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
