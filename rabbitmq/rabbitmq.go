@@ -35,6 +35,7 @@ func (r *rabbbitmq) Subscribe(topics map[string][]string, clientID string, stop 
 		<-stop
 		ch.Close()
 	}()
+
 	queueName := clientID
 	// Queue Dleclaration
 	if _, err := ch.QueueDeclare(
