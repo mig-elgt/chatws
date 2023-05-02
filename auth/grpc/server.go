@@ -14,8 +14,6 @@ type grpcServer struct {
 	handler
 }
 
-// NewAPI create new grpc Server and register the VNS service
-// with the optimizer handle.
 func NewAPI(jwtsvc jwt.TokenCreateValidator) *grpc.Server {
 	rootServer := grpc.NewServer()
 	s := &grpcServer{
@@ -30,5 +28,5 @@ func (g *grpcServer) Login(ctx context.Context, req *auth.LoginRequest) (*auth.L
 }
 
 func (g *grpcServer) Authenticate(ctx context.Context, req *auth.AuthenticateRequest) (*auth.AuthenticateResponse, error) {
-	return g.Authenticate(ctx, req)
+	return g.authenticate(ctx, req)
 }
