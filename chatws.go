@@ -1,6 +1,9 @@
 package chatws
 
-import "io"
+import (
+	"errors"
+	"io"
+)
 
 // TokenPayload describes a JTW payload data for a client
 type TokenPayload struct {
@@ -19,3 +22,8 @@ type MessageBroker interface {
 	Publish(topic, subTopic string, msg io.Reader) error
 	Close() error
 }
+
+var (
+	ErrAuthServiceNotAvilable = errors.New("auth service is not available")
+	ErrInvalidJWT             = errors.New("JWT is invalid or has expired")
+)

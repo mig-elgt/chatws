@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/mig-elgt/chatws"
+	"github.com/mig-elgt/chatws/mocks"
 )
 
 func TestWebSocketHandler(t *testing.T) {
@@ -32,10 +33,23 @@ func TestWebSocketHandler(t *testing.T) {
 			},
 			wantStatusCode: http.StatusBadRequest,
 		},
+		"auth service not available": {
+			args: args{
+				authenticateFnMock: func(jwt string) (*chatws.TokenPayload, error) {
+					return nil, chatws.ErrAuthServiceNotAvilable
+				},
+				clientQuery: "jwt=header.payload.signature&topics=logs:foo,bar",
+			},
+			wantStatusCode: http.StatusInternalServerError,
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			h := handler{}
+			h := handler{
+				auth: &mocks.AuthServiceMock{
+					AuthenticateFn: tc.args.authenticateFnMock,
+				},
+			}
 			svr := httptest.NewServer(http.HandlerFunc(h.wsHandler))
 			u := "ws" + strings.TrimPrefix(svr.URL, "http")
 			ws, resp, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%v?%v", u, tc.args.clientQuery), nil)

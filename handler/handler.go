@@ -38,4 +38,9 @@ func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing topics", http.StatusBadRequest)
 		return
 	}
+	_, err := h.auth.Authenticate(jwt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
