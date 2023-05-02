@@ -26,4 +26,5 @@ type MessageBroker interface {
 var (
 	ErrAuthServiceNotAvilable = errors.New("auth service is not available")
 	ErrInvalidJWT             = errors.New("JWT is invalid or has expired")
+	ErrClientTopicsBadFormat  = errors.New("client topics bad format")
 )

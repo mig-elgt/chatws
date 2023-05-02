@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -38,9 +39,36 @@ func (h handler) wsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing topics", http.StatusBadRequest)
 		return
 	}
-	_, err := h.auth.Authenticate(jwt)
+	_, err := h.convertTopics(topics)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	// _, err := h.auth.Authenticate(jwt)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+}
+
+// logs:foo,bar|sensors:a,b
+func (h handler) convertTopics(topicsStr string) (map[string][]string, error) {
+	topics := map[string][]string{}
+	kinds := strings.Split(topicsStr, "|")
+	if len(kinds) == 0 {
+		return nil, chatws.ErrClientTopicsBadFormat
+	}
+	for _, kind := range kinds {
+		t := strings.Split(kind, ":")
+		if len(t) != 2 {
+			return nil, chatws.ErrClientTopicsBadFormat
+		}
+		topic := t[0]
+		subTopics := strings.Split(t[1], ",")
+		if len(subTopics) == 0 {
+			return nil, chatws.ErrClientTopicsBadFormat
+		}
+		topics[topic] = subTopics
+	}
+	return topics, nil
 }

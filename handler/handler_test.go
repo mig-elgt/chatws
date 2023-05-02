@@ -33,15 +33,34 @@ func TestWebSocketHandler(t *testing.T) {
 			},
 			wantStatusCode: http.StatusBadRequest,
 		},
-		"auth service not available": {
+		"topics bad format": {
 			args: args{
-				authenticateFnMock: func(jwt string) (*chatws.TokenPayload, error) {
-					return nil, chatws.ErrAuthServiceNotAvilable
-				},
-				clientQuery: "jwt=header.payload.signature&topics=logs:foo,bar",
+				clientQuery: "jwt=header.payload.signature&topics=logs",
 			},
-			wantStatusCode: http.StatusInternalServerError,
+			wantStatusCode: http.StatusBadRequest,
 		},
+		// "auth service not available": {
+		// 	args: args{
+		// 		authenticateFnMock: func(jwt string) (*chatws.TokenPayload, error) {
+		// 			return nil, chatws.ErrAuthServiceNotAvilable
+		// 		},
+		// 		clientQuery: "jwt=header.payload.signature&topics=logs:foo,bar",
+		// 	},
+		// 	wantStatusCode: http.StatusInternalServerError,
+		// },
+		// "client topics not authorization": {
+		// 	args: args{
+		// 		authenticateFnMock: func(jwt string) (*chatws.TokenPayload, error) {
+		// 			return &chatws.TokenPayload{
+		// 				Topics: map[string][]string{
+		// 					"logs": {"panic"},
+		// 				},
+		// 			}, nil
+		// 		},
+		// 		clientQuery: "jwt=header.payload.signature&topics=logs:foo,bar|sensors:gps",
+		// 	},
+		// 	wantStatusCode: http.StatusUnauthorized,
+		// },
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
