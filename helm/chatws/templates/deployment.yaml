@@ -34,19 +34,11 @@ spec:
         - containerPort: {{ $val.port }}
         {{- end }}
         env:
-        - name: ENVIRONMENT
-          value: {{ .Values.labels.environment }}
         - name: RABBITMQ_HOST
           value: {{ .Values.rabbitmq.hostname | quote }}
         - name: RABBITMQ_PORT
           value: {{ .Values.rabbitmq.port | quote }}
         - name: RABBITMQ_USER
-          valueFrom:
-            secretKeyRef:
-              name: rabbitmq-auth
-              key: username
+          value: {{ .Values.rabbitmq.username | quote }}
         - name: RABBITMQ_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: rabbitmq-auth
-              key: password
+          value: {{ .Values.rabbitmq.password | quote }}
