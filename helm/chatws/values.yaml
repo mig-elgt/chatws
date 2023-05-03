@@ -24,7 +24,7 @@ strategy:
     maxUnavailable: 0
 
 rabbitmq:
-  hostname: rabbitmq-stg-rabbitmq-ha
-  username: user
+  hostname: rabbitmq
+  username: admin
   password: bitnami
   port: 5672
