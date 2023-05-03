@@ -55,7 +55,7 @@ func main() {
 		case <-ticker.C:
 			clients := strings.Split(*recipients, ",")
 			for _, clientId := range clients {
-				msg := []byte(fmt.Sprintf(`{"kind":"chat","message":"Hello there, iam %v","recipient":"%v"}`, *username, clientId))
+				msg := []byte(fmt.Sprintf(`{"kind":"chat","message":"Hello there, I am %v","recipient":"%v"}`, *username, clientId))
 				err := conn.WriteMessage(websocket.TextMessage, msg)
 				if err != nil {
 					log.Println("write:", err)
